@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>远程画布</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+html,body{width:100%;height:100%;overflow:hidden;background:#1A1A2E;font-family:'PingFang SC','Microsoft YaHei',sans-serif;color:#fff}
+#app{display:flex;flex-direction:column;height:100%}
+/* === 顶部连接栏 === */
+#topbar{display:flex;align-items:center;gap:6px;padding:6px 10px;background:#12122A;min-height:40px;flex-shrink:0}
+#topbar input{flex:1;border:none;border-radius:6px;padding:6px 10px;font-size:12px;background:#2A2A4A;color:#fff;outline:none;min-width:0}
+#topbar input::placeholder{color:#888}
+#topbar button{white-space:nowrap;border:none;border-radius:6px;padding:6px 12px;font-size:12px;cursor:pointer;color:#fff;background:#4A90D9;font-weight:bold}
+#topbar button.disconnect{background:#E85D75}
+#status{font-size:10px;color:#4CAF50;white-space:nowrap;min-width:40px;text-align:center}
+#status.off{color:#E85D75}
+/* === 画布区域 === */
+#canvas-area{flex:1;position:relative;overflow:hidden}
+canvas{position:absolute;top:0;left:0;touch-action:none}
+/* === 底部工具栏 === */
+#toolbar{display:flex;align-items:center;gap:4px;padding:4px 6px;background:#12122A;flex-shrink:0;overflow-x:auto;flex-wrap:nowrap}
+.tool-btn{border:none;border-radius:8px;min-width:36px;height:36px;font-size:16px;cursor:pointer;background:#2A2A4A;color:#aaa;display:flex;align-items:center;justify-content:center;transition:0.2s;flex-shrink:0}
+.tool-btn.active{background:#4A90D9;color:#fff;box-shadow:0 0 8px rgba(74,144,217,0.5)}
+.tool-btn.eraser-active{background:#E85D75;color:#fff;box-shadow:0 0 8px rgba(232,93,117,0.5)}
+/* 颜色选择器 */
+#color-picker{display:flex;align-items:center;gap:2px;flex-shrink:0}
+.color-dot{width:24px;height:24px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:0.2s;flex-shrink:0}
+.color-dot.selected{border-color:#fff;transform:scale(1.2);box-shadow:0 0 6px rgba(255,255,255,0.4)}
+/* 画笔大小选择 */
+#size-picker{display:flex;align-items:center;gap:3px;flex-shrink:0}
+.size-dot{border-radius:50%;cursor:pointer;background:#888;transition:0.2s;flex-shrink:0}
+.size-dot.selected{background:#4A90D9;box-shadow:0 0 6px rgba(74,144,217,0.6)}
+/* 状态指示 */
+#info{font-size:10px;color:#888;white-space:nowrap;flex-shrink:0;padding:0 4px}
+/* 对方光标 */
+#remote-cursor{position:absolute;pointer-events:none;z-index:10;display:none;transition:0.1s}
+#remote-cursor .dot{width:10px;height:10px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 6px currentColor}
+#remote-cursor .label{font-size:8px;color:#fff;background:rgba(0,0,0,0.6);padding:1px 4px;border-radius:4px;position:absolute;top:-16px;left:8px;white-space:nowrap}
+/* 连接弹窗 */
+#modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.75);display:flex;align-items:center;justify-content:center;z-index:100}
+#modal>div{background:#23234A;border-radius:12px;padding:20px;width:85%;max-width:360px}
+#modal h3{text-align:center;margin-bottom:12px;font-size:16px}
+#modal input,#modal select{width:100%;border:none;border-radius:8px;padding:10px;margin:6px 0;font-size:13px;background:#333360;color:#fff;outline:none}
+#modal button{width:100%;border:none;border-radius:8px;padding:10px;font-size:14px;cursor:pointer;color:#fff;background:#4CAF50;font-weight:bold;margin-top:8px}
+#modal .hint{font-size:10px;color:#aaa;text-align:center;margin-top:8px;line-height:1.5}
+</style>
+</head>
+<body>
+<div id="app">
+  <!-- 顶栏 -->
+  <div id="topbar">
+    <span style="font-size:14px">🎨</span>
+    <input id="serverUrl" placeholder="ws://IP:端口" value="wss://dualdraw.fly.dev">
+    <input id="roomId" placeholder="房间号" value="8888" maxlength="20" style="max-width:60px">
+    <button id="btnConnect" onclick="toggleConnect()">连接</button>
+    <span id="status" class="off">● 离线</span>
+  </div>
+
+  <!-- 画布 -->
+  <div id="canvas-area">
+    <canvas id="canvas"></canvas>
+    <div id="remote-cursor"><div class="dot"></div><div class="label"></div></div>
+  </div>
+
+  <!-- 工具栏 -->
+  <div id="toolbar">
+    <button class="tool-btn active" data-tool="pen" onclick="selectTool('pen')" title="铅笔">✏️</button>
+    <button class="tool-btn" data-tool="marker" onclick="selectTool('marker')" title="马克笔">🖍</button>
+    <button class="tool-btn" data-tool="brush" onclick="selectTool('brush')" title="毛笔">🖌</button>
+    <button class="tool-btn" data-tool="spray" onclick="selectTool('spray')" title="喷枪">💨</button>
+    <button class="tool-btn" id="eraserBtn" data-tool="eraser" onclick="selectTool('eraser')" title="橡皮擦">🧹</button>
+    <span style="color:#555;margin:0 2px">|</span>
+    <!-- 颜色 -->
+    <div id="color-picker"></div>
+    <span style="color:#555;margin:0 2px">|</span>
+    <!-- 大小 -->
+    <div id="size-picker"></div>
+    <span style="color:#555;margin:0 2px">|</span>
+    <button class="tool-btn" onclick="undo()" title="撤销">↩</button>
+    <button class="tool-btn" onclick="clearCanvas()" title="清空">🗑</button>
+    <span id="info">离线模式</span>
+  </div>
+</div>
+
+<script>
+// ============ 配置 ============
+const COLORS = [
+  '#FFFFFF','#E85D75','#FF9800','#FFEB3B','#4CAF50','#2196F3',
+  '#9C27B0','#00BCD4','#795548','#607D8B','#1A1A2E','#FF5722'
+];
+const SIZES = [2,5,10,18,30];
+const TOOLS = {
+  pen:    {name:'铅笔',size:2,alpha:1,spray:false},
+  marker: {name:'马克笔',size:10,alpha:0.6,spray:false},
+  brush:  {name:'毛笔',size:18,alpha:0.35,spray:false},
+  spray:  {name:'喷枪',size:20,alpha:0.25,spray:true},
+  eraser: {name:'橡皮擦',size:30,alpha:1,spray:false,isEraser:true}
+};
+
+// ============ 状态 ============
+let state = {
+  tool:'pen',  color:0,  sizeIdx:2,
+  drawing:false,  isEraser:false,
+  strokes:[],   // 本地所有笔画
+  undoneStrokes:[], // 撤销的笔画可重做
+  ws:null,  connected:false,  myId:'',  room:'',
+  remoteStrokes:[], // 对方的笔画
+  lastX:0, lastY:0
+};
+
+// ============ DOM ============
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const info = document.getElementById('info');
+const statusEl = document.getElementById('status');
+const remoteCursor = document.getElementById('remote-cursor');
+const eraserBtn = document.getElementById('eraserBtn');
+
+// ============ 画布初始化 ============
+function resizeCanvas() {
+  const area = document.getElementById('canvas-area');
+  const rect = area.getBoundingClientRect();
+  canvas.width = rect.width * (window.devicePixelRatio||1);
+  canvas.height = rect.height * (window.devicePixelRatio||1);
+  canvas.style.width = rect.width+'px';
+  canvas.style.height = rect.height+'px';
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.scale(window.devicePixelRatio||1, window.devicePixelRatio||1);
+  redrawAll();
+}
+window.addEventListener('resize', resizeCanvas);
+
+// ============ 工具栏构建 ============
+function buildColorPicker() {
+  const picker = document.getElementById('color-picker');
+  COLORS.forEach((c,i)=>{
+    const dot = document.createElement('div');
+    dot.className='color-dot'+(i===state.color?' selected':'');
+    dot.style.background=c;
+    dot.onclick=()=>selectColor(i);
+    picker.appendChild(dot);
+  });
+}
+function buildSizePicker() {
+  const picker = document.getElementById('size-picker');
+  SIZES.forEach((s,i)=>{
+    const dot = document.createElement('div');
+    dot.className='size-dot'+(i===state.sizeIdx?' selected':'');
+    const px = Math.max(8, s*1.2);
+    dot.style.width=px+'px'; dot.style.height=px+'px';
+    dot.onclick=()=>selectSize(i);
+    picker.appendChild(dot);
+  });
+}
+function selectColor(i){
+  state.color=i;
+  document.querySelectorAll('.color-dot').forEach((d,j)=>d.classList.toggle('selected',j===i));
+}
+function selectSize(i){
+  state.sizeIdx=i;
+  document.querySelectorAll('.size-dot').forEach((d,j)=>d.classList.toggle('selected',j===i));
+}
+function selectTool(tool){
+  state.tool=tool;
+  state.isEraser = (tool==='eraser');
+  document.querySelectorAll('.tool-btn[data-tool]').forEach(b=>{
+    b.classList.remove('active','eraser-active');
+    if(b.dataset.tool===tool){
+      b.classList.add(tool==='eraser'?'eraser-active':'active');
+    }
+  });
+}
+function getToolConfig(){
+  const t = TOOLS[state.tool];
+  return {size:t.size,alpha:t.alpha,spray:t.spray||false,isEraser:t.isEraser||false,color:COLORS[state.color]};
+}
+
+// ============ 绘制 ============
+function drawStroke(s, paint){
+  if(s.points.length<2) return;
+  ctx.save();
+  ctx.globalAlpha = s.alpha||1;
+  if(s.isEraser){
+    ctx.globalCompositeOperation='destination-out';
+  }else{
+    ctx.globalCompositeOperation='source-over';
+  }
+  ctx.strokeStyle = s.color;
+  ctx.lineWidth = s.size;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.beginPath();
+  ctx.moveTo(s.points[0].x, s.points[0].y);
+  if(s.spray && s.points.length>1){
+    // 喷枪效果
+    for(let i=0;i<s.points.length;i++){
+      const p=s.points[i];
+      const r=s.size*0.8;
+      for(let j=0;j<8;j++){
+        const angle=Math.random()*Math.PI*2;
+        const dist=Math.random()*r;
+        ctx.fillStyle=s.color;
+        ctx.globalAlpha=s.alpha*0.5;
+        ctx.beginPath();
+        ctx.arc(p.x+Math.cos(angle)*dist, p.y+Math.sin(angle)*dist, s.size*0.06, 0, Math.PI*2);
+        ctx.fill();
+      }
+    }
+  }else{
+    for(let i=1;i<s.points.length;i++){
+      ctx.lineTo(s.points[i].x, s.points[i].y);
+    }
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+function redrawAll(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  // 所有自己的笔画
+  state.strokes.forEach(s=>drawStroke(s,{}));
+  // 所有对方的笔画
+  state.remoteStrokes.forEach(s=>drawStroke(s,{}));
+}
+
+// ============ 触摸事件 ============
+function getPos(e){
+  const r=canvas.getBoundingClientRect();
+  return {x:e.clientX-r.left, y:e.clientY-r.top};
+}
+canvas.addEventListener('pointerdown',e=>{
+  e.preventDefault();
+  state.drawing=true;
+  const p=getPos(e);
+  state.lastX=p.x; state.lastY=p.y;
+  const cfg=getToolConfig();
+  const stroke = {
+    id: Date.now()+'_'+Math.random(),
+    author: state.myId,
+    points:[p],
+    color:cfg.color, size:cfg.size, alpha:cfg.alpha,
+    spray:cfg.spray, isEraser:cfg.isEraser
+  };
+  state.strokes.push(stroke);
+  state.undoneStrokes=[];
+  sendMsg({type:'stroke_start',stroke});
+});
+canvas.addEventListener('pointermove',e=>{
+  if(!state.drawing) return;
+  e.preventDefault();
+  const p=getPos(e);
+  const s=state.strokes[state.strokes.length-1];
+  if(!s) return;
+  s.points.push(p);
+  const cfg=getToolConfig();
+  // 实时画
+  drawStroke(s,{});
+  // 发送增量
+  sendMsg({type:'stroke_move',strokeId:s.id,point:p});
+});
+canvas.addEventListener('pointerup',e=>{
+  state.drawing=false;
+  const s=state.strokes[state.strokes.length-1];
+  if(s) sendMsg({type:'stroke_end',strokeId:s.id});
+  updateInfo();
+});
+canvas.addEventListener('pointerleave',()=>{ state.drawing=false; });
+
+// ============ 工具操作 ============
+function undo(){
+  if(state.strokes.length===0) return;
+  const s=state.strokes.pop();
+  state.undoneStrokes.push(s);
+  redrawAll();
+  sendMsg({type:'undo',strokeId:s.id});
+  updateInfo();
+}
+function clearCanvas(){
+  if(!confirm('确定要清空画布吗？')) return;
+  state.strokes=[];
+  state.remoteStrokes=[];
+  state.undoneStrokes=[];
+  redrawAll();
+  sendMsg({type:'clear'});
+  updateInfo();
+}
+function updateInfo(){
+  const total = state.strokes.length + state.remoteStrokes.length;
+  info.textContent = state.connected
+    ? `📡 已连接 · ${total}笔`
+    : '📴 离线模式';
+}
+
+// ============ WebSocket ============
+function toggleConnect(){
+  if(state.connected){ disconnect(); return; }
+  connect();
+}
+function connect(){
+  const url = document.getElementById('serverUrl').value.trim();
+  const room = document.getElementById('roomId').value.trim();
+  if(!url||!room){ alert('请填写服务器地址和房间号'); return; }
+  if(!url.startsWith('ws://') && !url.startsWith('wss://')){
+    alert('地址需要以 ws:// 或 wss:// 开头'); return;
+  }
+  disconnect();
+  try {
+    state.ws = new WebSocket(url);
+    state.myId = 'u_'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+    state.room = room;
+    const ws = state.ws;
+    ws.onopen = ()=>{
+      state.connected=true;
+      statusEl.textContent='● 已连接';
+      statusEl.className='';
+      document.getElementById('btnConnect').textContent='断开';
+      document.getElementById('btnConnect').classList.add('disconnect');
+      ws.send(JSON.stringify({type:'join',room,userId:state.myId}));
+      updateInfo();
+    };
+    ws.onmessage = (e)=>{
+      const msg = JSON.parse(e.data);
+      handleMsg(msg);
+    };
+    ws.onclose = ()=>{
+      state.connected=false;
+      statusEl.textContent='● 离线';
+      statusEl.className='off';
+      document.getElementById('btnConnect').textContent='连接';
+      document.getElementById('btnConnect').classList.remove('disconnect');
+      updateInfo();
+    };
+    ws.onerror = ()=>{};
+  }catch(err){
+    alert('连接失败：'+err.message);
+  }
+}
+function disconnect(){
+  if(state.ws){ state.ws.close(); state.ws=null; }
+  state.connected=false;
+}
+function sendMsg(msg){
+  if(!state.ws||state.ws.readyState!==WebSocket.OPEN) return;
+  msg.room = state.room;
+  msg.userId = state.myId;
+  state.ws.send(JSON.stringify(msg));
+}
+
+// ============ 消息处理 ============
+function handleMsg(msg){
+  if(msg.userId===state.myId) return; // 忽略自己的消息
+  switch(msg.type){
+    case 'join':
+      // 发送当前所有笔画给新加入的人
+      state.strokes.forEach(s=>{
+        sendMsg({type:'stroke_full',stroke:s});
+      });
+      break;
+    case 'stroke_full':
+      state.remoteStrokes.push(msg.stroke);
+      redrawAll();
+      break;
+    case 'stroke_start':
+      state.remoteStrokes.push(msg.stroke);
+      drawStroke(msg.stroke,{});
+      break;
+    case 'stroke_move':
+      const rs = state.remoteStrokes.find(s=>s.id===msg.strokeId);
+      if(rs){ rs.points.push(msg.point); drawStroke(rs,{}); }
+      break;
+    case 'stroke_end':
+      redrawAll();
+      updateInfo();
+      break;
+    case 'undo':
+      const idx = state.remoteStrokes.findIndex(s=>s.id===msg.strokeId);
+      if(idx>=0){ state.remoteStrokes.splice(idx,1); redrawAll(); updateInfo(); }
+      break;
+    case 'clear':
+      state.remoteStrokes=[];
+      state.strokes=[];
+      state.undoneStrokes=[];
+      redrawAll();
+      updateInfo();
+      break;
+    case 'cursor':
+      // 对方光标位置
+      remoteCursor.style.display='block';
+      remoteCursor.style.left=msg.x+'px';
+      remoteCursor.style.top=msg.y+'px';
+      remoteCursor.querySelector('.dot').style.color=msg.color;
+      remoteCursor.querySelector('.label').textContent=msg.userName||'对方';
+      setTimeout(()=>{ remoteCursor.style.display='none'; },3000);
+      break;
+  }
+}
+
+// 周期性发送光标位置（简化：只在pointermove发送）
+canvas.addEventListener('pointermove',e=>{
+  if(!state.drawing && state.connected){
+    const p=getPos(e);
+    sendMsg({type:'cursor',x:p.x,y:p.y,color:COLORS[state.color],userName:'我'});
+  }
+});
+
+// ============ 初始化 ============
+function init(){
+  resizeCanvas();
+  buildColorPicker();
+  buildSizePicker();
+  selectTool('pen');
+  updateInfo();
+}
+init();
+</script>
+</body>
+</html>
