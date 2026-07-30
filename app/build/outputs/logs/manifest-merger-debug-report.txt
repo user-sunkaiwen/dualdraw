@@ -1,0 +1,61 @@
+-- Merging decision tree log ---
+manifest
+ADDED from /opt/dual_draw/app/src/main/AndroidManifest.xml:2:1-24:12
+INJECTED from /opt/dual_draw/app/src/main/AndroidManifest.xml:2:1-24:12
+INJECTED from /opt/dual_draw/app/src/main/AndroidManifest.xml:2:1-24:12
+INJECTED from /opt/dual_draw/app/src/main/AndroidManifest.xml:2:1-24:12
+	package
+		INJECTED from /opt/dual_draw/app/src/main/AndroidManifest.xml
+	android:versionName
+		INJECTED from /opt/dual_draw/app/src/main/AndroidManifest.xml
+	android:versionCode
+		INJECTED from /opt/dual_draw/app/src/main/AndroidManifest.xml
+	xmlns:android
+		ADDED from /opt/dual_draw/app/src/main/AndroidManifest.xml:2:11-69
+uses-feature#android.hardware.screen.landscape
+ADDED from /opt/dual_draw/app/src/main/AndroidManifest.xml:4:5-95
+	android:required
+		ADDED from /opt/dual_draw/app/src/main/AndroidManifest.xml:4:68-92
+	android:name
+		ADDED from /opt/dual_draw/app/src/main/AndroidManifest.xml:4:19-67
+application
+ADDED from /opt/dual_draw/app/src/main/AndroidManifest.xml:6:5-23:19
+INJECTED from /opt/dual_draw/app/src/main/AndroidManifest.xml:6:5-23:19
+	android:extractNativeLibs
+		INJECTED from /opt/dual_draw/app/src/main/AndroidManifest.xml
+	android:label
+		ADDED from /opt/dual_draw/app/src/main/AndroidManifest.xml:9:9-29
+	android:icon
+		ADDED from /opt/dual_draw/app/src/main/AndroidManifest.xml:8:9-45
+	android:allowBackup
+		ADDED from /opt/dual_draw/app/src/main/AndroidManifest.xml:7:9-35
+	android:theme
+		ADDED from /opt/dual_draw/app/src/main/AndroidManifest.xml:10:9-46
+activity#com.example.dualdraw.MainActivity
+ADDED from /opt/dual_draw/app/src/main/AndroidManifest.xml:12:9-21:20
+	android:screenOrientation
+		ADDED from /opt/dual_draw/app/src/main/AndroidManifest.xml:15:13-50
+	android:exported
+		ADDED from /opt/dual_draw/app/src/main/AndroidManifest.xml:14:13-36
+	android:configChanges
+		ADDED from /opt/dual_draw/app/src/main/AndroidManifest.xml:16:13-72
+	android:name
+		ADDED from /opt/dual_draw/app/src/main/AndroidManifest.xml:13:13-41
+intent-filter#action:name:android.intent.action.MAIN+category:name:android.intent.category.LAUNCHER
+ADDED from /opt/dual_draw/app/src/main/AndroidManifest.xml:17:13-20:29
+action#android.intent.action.MAIN
+ADDED from /opt/dual_draw/app/src/main/AndroidManifest.xml:18:17-69
+	android:name
+		ADDED from /opt/dual_draw/app/src/main/AndroidManifest.xml:18:25-66
+category#android.intent.category.LAUNCHER
+ADDED from /opt/dual_draw/app/src/main/AndroidManifest.xml:19:17-77
+	android:name
+		ADDED from /opt/dual_draw/app/src/main/AndroidManifest.xml:19:27-74
+uses-sdk
+INJECTED from /opt/dual_draw/app/src/main/AndroidManifest.xml reason: use-sdk injection requested
+INJECTED from /opt/dual_draw/app/src/main/AndroidManifest.xml
+INJECTED from /opt/dual_draw/app/src/main/AndroidManifest.xml
+	android:targetSdkVersion
+		INJECTED from /opt/dual_draw/app/src/main/AndroidManifest.xml
+	android:minSdkVersion
+		INJECTED from /opt/dual_draw/app/src/main/AndroidManifest.xml

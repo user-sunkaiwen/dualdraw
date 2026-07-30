@@ -1,0 +1,53 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+3    package="com.example.dualdraw"
+4    android:versionCode="1"
+5    android:versionName="1.0" >
+6
+7    <uses-sdk
+8        android:minSdkVersion="24"
+9        android:targetSdkVersion="34" />
+10
+11    <uses-feature
+11-->/opt/dual_draw/app/src/main/AndroidManifest.xml:4:5-95
+12        android:name="android.hardware.screen.landscape"
+12-->/opt/dual_draw/app/src/main/AndroidManifest.xml:4:19-67
+13        android:required="false" />
+13-->/opt/dual_draw/app/src/main/AndroidManifest.xml:4:68-92
+14
+15    <application
+15-->/opt/dual_draw/app/src/main/AndroidManifest.xml:6:5-23:19
+16        android:allowBackup="true"
+16-->/opt/dual_draw/app/src/main/AndroidManifest.xml:7:9-35
+17        android:debuggable="true"
+18        android:extractNativeLibs="false"
+19        android:icon="@drawable/ic_launcher"
+19-->/opt/dual_draw/app/src/main/AndroidManifest.xml:8:9-45
+20        android:label="双人画布"
+20-->/opt/dual_draw/app/src/main/AndroidManifest.xml:9:9-29
+21        android:theme="@style/Theme.DualDraw" >
+21-->/opt/dual_draw/app/src/main/AndroidManifest.xml:10:9-46
+22        <activity
+22-->/opt/dual_draw/app/src/main/AndroidManifest.xml:12:9-21:20
+23            android:name="com.example.dualdraw.MainActivity"
+23-->/opt/dual_draw/app/src/main/AndroidManifest.xml:13:13-41
+24            android:configChanges="orientation|screenSize|screenLayout"
+24-->/opt/dual_draw/app/src/main/AndroidManifest.xml:16:13-72
+25            android:exported="true"
+25-->/opt/dual_draw/app/src/main/AndroidManifest.xml:14:13-36
+26            android:screenOrientation="landscape" >
+26-->/opt/dual_draw/app/src/main/AndroidManifest.xml:15:13-50
+27            <intent-filter>
+27-->/opt/dual_draw/app/src/main/AndroidManifest.xml:17:13-20:29
+28                <action android:name="android.intent.action.MAIN" />
+28-->/opt/dual_draw/app/src/main/AndroidManifest.xml:18:17-69
+28-->/opt/dual_draw/app/src/main/AndroidManifest.xml:18:25-66
+29
+30                <category android:name="android.intent.category.LAUNCHER" />
+30-->/opt/dual_draw/app/src/main/AndroidManifest.xml:19:17-77
+30-->/opt/dual_draw/app/src/main/AndroidManifest.xml:19:27-74
+31            </intent-filter>
+32        </activity>
+33    </application>
+34
+35</manifest>
